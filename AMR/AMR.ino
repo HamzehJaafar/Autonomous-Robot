@@ -5,10 +5,10 @@
 //========================================================
 const int LIGHT_THRESHOLD  = 570;
 const int FOLLOW_THRESHOLD = 750;
-
+const int NUM_POSITIONS = 1;
 const int MAX_DISTANCE     = 11;
 const int MAX_HEIGHT       = 20;
-const int MAX_SPEED        = 128;
+const int MAX_SPEED        = 50;
 
 //========================================================
 // Motor & other variables
@@ -49,8 +49,8 @@ ServoTimer2 servo;  // Servo var
 // IR sensor variables
 //=========================================================
 const int IRSensorRight = 1;  // IR sensor right port  (D1)
-const int IRSensorMid   = 3;  // IR sensor middle port (D3)
-const int IRSensorLeft  = 11; // IR sensor left port  (D11)
+const int IRSensorMid   = 11;  // IR sensor middle port (D11)
+const int IRSensorLeft  = 3; // IR sensor left port  (D3)
 int SL, SM, SR;               // IR sensor states
 
 //=========================================================
@@ -63,7 +63,8 @@ int LightSensorValues[NUM_POSITIONS] = {}; // Light sensor values for the differ
 // Initial setup code
 void setup() {
   // Begin serial output
-  Serial.begin(9600); // Do not uncomment this unless you want debugging and aren't using D0 and/or D1
+  //
+  //Serial.begin(9600); // Do not uncomment this unless you want debugging and aren't using D0 and/or D1
   
   // Initialize left and right motor drive for output mode.
   pinMode(left_motor_go,    OUTPUT);
@@ -289,15 +290,221 @@ void keyscan() {
   }
 }
 
+int startX[]  = {4,4,0};
+int startY[] = {0,2,0};
+
+int startPos = 1;
+
+int ballPos[12][2] = {{1,2}, {2,1}, {3,2},
+                       {1,1}, {2,1}, {3,1},
+                       {1,1}, {2,1}, {3,1},
+                       {1,1}, {2,2}, {3,3}};
+
+int upDown[] = {1,1,1,0,0,0,1,1,1,0,0,0};
+
+int posWithBall[] = {1,2,3,4,5,6};
+int currX = 0;
+int currY = 0;
+
+int startingAxis[] = {1,1,1};
+// 0  means its moving in X axis, 1 means Y;
+int currAxis = 0;
+
+int startingDirection[] = {0,0,1};
+// 0 means goings forward, 1 means going back.
+int currDirection = 0;
+
+void updatePos(){
+  if (currAxis == 0) {
+    if (currDirection == 0) currX += 1;
+    if (currDirection == 1) currX -= 1;
+  }
+  
+  if (currAxis == 1) {
+    if (currDirection == 0) currY += 1;
+    if (currDirection == 1) currY -= 1;
+  }
+}
+
+void rotateX(){
+      SM = digitalRead(IRSensorMid);
+      SR = digitalRead(IRSensorRight);
+      SL = digitalRead(IRSensorLeft);
+  if (currX == 0) {
+    if (currDirection == 1){
+      rotateLeft();
+    }
+    currDirection = 0;
+    
+  }
+
+  currAxis = 0;
+}
+void rotateY(){
+
+      SM = digitalRead(IRSensorMid);
+      SR = digitalRead(IRSensorRight);
+      SL = digitalRead(IRSensorLeft);
+  if (currY == 2){
+
+    if (currDirection == 1) {
+      rotateLeft();
+    } else {
+      run();
+      spin_right(4);
+    }
+    
+   currDirection = 1;
+  }
+
+  if (currY == 0){
+
+    if (currDirection == 0) {
+      rotateLeft();
+    } else {
+      run();
+      spin_right(4);
+    }
+    
+   currDirection = 1;
+  }
+
+      currAxis = 1;
+      brake();
+}
+
+
+void takeXStep(){
+  
+      SM = digitalRead(IRSensorMid);
+      SR = digitalRead(IRSensorRight);
+      SL = digitalRead(IRSensorLeft);
+      
+     boolean takeStep = true;
+
+     if (SM == LOW && SR == LOW && SL == LOW) takeStep = false;
+     
+     while (takeStep) {
+        
+      SM = digitalRead(IRSensorMid);
+      SR = digitalRead(IRSensorRight);
+      SL = digitalRead(IRSensorLeft);
+      if (SL ==LOW &&SR== LOW)// Black lines were not detected at the same time
+        run();   // go ahead
+      else if (SL == LOW & SR == HIGH)// Left sensor against white undersurface and right against black undersurface , the car left off track and need to adjust to the right.
+          right();
+      else if (SR == LOW & SL ==  HIGH) // Rihgt sensor against white undersurface and left against black undersurface , the car right off track and need to adjust to the left.
+        left();
+
+        
+      SM = digitalRead(IRSensorMid);
+      SR = digitalRead(IRSensorRight);
+      SL = digitalRead(IRSensorLeft);
+
+     if (SM == LOW && SR == LOW && SL == LOW) {
+      brake();
+      delay(500);
+      
+        if (SM == LOW && SR == LOW && SL == LOW) {
+            takeStep = false; break;
+        }
+      }
+     
+     
+     }
+     brake();
+     updatePos();
+     
+     delay(1000);
+}
+
+
+void goTo(int pos){
+  int targetPosX = ballPos[pos-1][0];
+  int targetPosY = ballPos[pos-1][1];
+
+  int diffX = targetPosX - currX;
+  int diffY = targetPosY - currY;
+  boolean onLine = true;
+  boolean doneX = false;
+  // Go to corner of layout
+
+  if (currY != targetPosY) {
+    if (currX == 0 || currX == 4) onLine = false;
+    while(onLine){    
+      takeXStep();
+      //Serial.println(currX);
+      if (currX == 0 || currX == 4) {
+        doneX = true;
+        break;
+      }
+    }
+  
+    if (doneX) rotateY(); 
+  } 
+  delay(1000);
+  while(currY != targetPosY){
+    takeXStep();
+  }
+
+  delay(1000);
+
+  // go to new x
+  rotateX();
+    while (currX != targetPosX) {
+      takeXStep();
+    }
+ 
+  
+}
+void rotateLeft(){
+   SM = digitalRead(IRSensorMid);
+   SR = digitalRead(IRSensorRight);
+   SL = digitalRead(IRSensorLeft);
+  while (SM != HIGH || SL != LOW || SR != LOW  ) {
+        
+      SM = digitalRead(IRSensorMid);
+      SR = digitalRead(IRSensorRight);
+      SL = digitalRead(IRSensorLeft);
+
+      run();
+      if (SL ==LOW &&SR== LOW)// Black lines were not detected at the same time
+        { delay(20);
+        spin_left(1);   // go ahead
+        }else if (SL == LOW & SR == HIGH)// Left sensor against white undersurface and right against black undersurface , the car left off track and need to adjust to the right.
+          spin_right(1);
+      else if (SR == LOW & SL ==  HIGH) // Rihgt sensor against white undersurface and left against black undersurface , the car right off track and need to adjust to the left.
+      {
+        delay(20);
+        spin_left(1);
+      }
+    brake();
+    if (SM == HIGH && SL == LOW && SR == LOW ) break;
+     
+     
+     }
+     run();
+      spin_right(1);
+     brake();
+}
 void loop() {
   keyscan(); // Press the button to start
+
+  //currX = startX[startPos-1];
+  //currY = startY[startPos-1];
+  currX = 2;
+  currY = 2; 
+  currAxis = 0;
+  currDirection = 1;
+  //currAxis = startingAxis[startPos-1];
+  //currDirection  = startingDirection[startPos-1];
   while (true) {
+    // IR Sensors
     SM = digitalRead(IRSensorMid);
-    if (SM == LOW) {
-      Serial.println("LOW");
-    }
-    else {
-      Serial.println("HIGH");
-    }
+    SR = digitalRead(IRSensorRight);
+    SL = digitalRead(IRSensorLeft);
+    takeXStep();
+    return;
+    
   }
 }

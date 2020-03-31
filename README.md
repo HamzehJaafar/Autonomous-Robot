@@ -1,5 +1,7 @@
 # Autonomous Robot
 
+![imageofrobot](robot.png)
+
 The Autonomous Robot can roam freely while avoiding objects / edges, follow black lines, and pick up the closest ball.
 
 ## Features

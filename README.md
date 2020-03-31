@@ -19,3 +19,8 @@ If the left IR sensor detects a black line, it moves left. If the right IR senso
 ### Candle Detection
 
 Our robot uses a light sensor with a photoresistor on it to detect different values of light (the lower the value, the brighter the light). Every time the servo rotates and faces a new direction, it stores the light sensor value for that direction. Once the servo completes its rotations, it compares all the stored light values to find which direction had the lowest light value (the brightest direction). When it finds the lowest light value, it turns towards that direction (left or right) and moves forward since that is the direction that is closest to the candle. When the light sensor detects a low enough value, it has found the candle and the robot completely stops all movement.
+
+## Authors
+
+Jonathon Bonilla
+Hamzeh Jaafar

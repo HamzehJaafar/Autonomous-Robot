@@ -1,1 +1,4 @@
-# CPS607 Autonomous Mobile Robot
+# Autonomous Robot
+
+Code for an Autonomous robot
+

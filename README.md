@@ -23,4 +23,5 @@ Our robot uses a light sensor with a photoresistor on it to detect different val
 ## Authors
 
 Jonathon Bonilla
+
 Hamzeh Jaafar

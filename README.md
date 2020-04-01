@@ -2,7 +2,7 @@
 
 ![imageofrobot](robot.png)
 
-The Autonomous Robot can roam freely while avoiding objects / edges, follow black lines, and pick up the closest ball.
+The Autonomous Robot can roam freely while avoiding objects / edges, follow black lines, pick up the closest ball and return it to predetermined destination.
 
 ## Features
 
